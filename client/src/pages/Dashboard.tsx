@@ -23,23 +23,23 @@ const SENTIMENT_COLORS = {
 
 export default function Dashboard() {
   const [range, setRange] = useState<'7d' | '30d'>('7d');
-  const [channel, setChannel] = useState<string>('');
-  const [language, setLanguage] = useState<string>('');
-  const [serviceLabel, setServiceLabel] = useState<string>('');
+  const [channel, setChannel] = useState<string>('all');
+  const [language, setLanguage] = useState<string>('all');
+  const [serviceLabel, setServiceLabel] = useState<string>('all');
 
   // Fetch metrics overview
   const { data: overview, isLoading } = trpc.metrics.overview.useQuery({
     range,
-    channel: channel || undefined,
-    language: language || undefined,
-    serviceLabel: serviceLabel ? parseInt(serviceLabel) : undefined,
+    channel: channel && channel !== 'all' ? channel : undefined,
+    language: language && language !== 'all' ? language : undefined,
+    serviceLabel: serviceLabel && serviceLabel !== 'all' ? parseInt(serviceLabel) : undefined,
   });
 
   // Fetch escalations
   const { data: escalations } = trpc.metrics.escalations.useQuery({
     range,
-    channel: channel || undefined,
-    language: language || undefined,
+    channel: channel && channel !== 'all' ? channel : undefined,
+    language: language && language !== 'all' ? language : undefined,
     limit: 5,
   });
 
@@ -120,7 +120,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="All channels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All channels</SelectItem>
+                  <SelectItem value="all">All channels</SelectItem>
                   <SelectItem value="web_chat">Web Chat</SelectItem>
                   <SelectItem value="voice_demo">Voice Demo</SelectItem>
                 </SelectContent>
@@ -134,7 +134,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="All languages" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All languages</SelectItem>
+                  <SelectItem value="all">All languages</SelectItem>
                   <SelectItem value="vi">Vietnamese</SelectItem>
                   <SelectItem value="en">English</SelectItem>
                 </SelectContent>
@@ -148,7 +148,7 @@ export default function Dashboard() {
                   <SelectValue placeholder="All labels" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All labels</SelectItem>
+                  <SelectItem value="all">All labels</SelectItem>
                   {Object.entries(SERVICE_LABELS).map(([num, labels]) => (
                     <SelectItem key={num} value={num}>
                       {labels.vi}
