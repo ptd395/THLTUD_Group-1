@@ -36,3 +36,18 @@
 ## Completed Features
 - [x] Project upgraded to web-db-user (database + server + auth)
 - [x] Fixed Home.tsx import issues
+
+
+## Chatbot Implementation (New)
+- [x] Create chatbot service with rule-based classification logic
+- [x] Implement language detection (Vietnamese/English)
+- [x] Implement service label detection with keyword matching
+- [x] Implement sentiment analysis with keyword-based scoring
+- [x] Implement scenario detection (REQUEST_SERVICE, REACT_TO_ORDER_INFO, CLARIFICATION)
+- [x] Create template response system for all scenarios and languages
+- [x] Integrate chatbot into Chat interface
+- [x] Build OrderInfoPopup component
+- [x] Add UI action handlers (OPEN_ORDER_INFO_POPUP)
+- [x] Build clarification menu component
+- [x] Write vitest tests for chatbot logic
+- [x] Test all scenarios and language combinations

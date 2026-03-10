@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -6,7 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Send, Loader2 } from 'lucide-react';
 import { useSentiment } from '@/contexts/SentimentContext';
-import { detectLanguage, analyzeSentiment, getSentimentColor } from '@/lib/sentiment';
+import { processChatbotMessage, type ChatbotResponse, type ServiceLabel } from '@/lib/chatbot';
+import OrderInfoPopup from './OrderInfoPopup';
+import ClarificationMenu from './ClarificationMenu';
 
 interface Message {
   id: string;
@@ -17,7 +19,9 @@ interface Message {
     label: string;
     score: number;
   };
+  serviceLabel?: ServiceLabel;
   timestamp: number;
+  chatbotResponse?: ChatbotResponse;
 }
 
 export function ChatPanel() {
@@ -26,6 +30,10 @@ export function ChatPanel() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [languageMode, setLanguageMode] = useState<'auto' | 'vi' | 'en'>('auto');
+  const [showOrderPopup, setShowOrderPopup] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('en');
+  const [showClarification, setShowClarification] = useState(false);
+  const [clarificationLanguage, setClarificationLanguage] = useState<'vi' | 'en'>('en');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
@@ -42,7 +50,7 @@ export function ChatPanel() {
       id: `msg-${Date.now()}`,
       role: 'user',
       text: input,
-      language: languageMode === 'auto' ? detectLanguage(input) : (languageMode as 'vi' | 'en'),
+      language: languageMode === 'auto' ? detectLanguageSimple(input) : (languageMode as 'vi' | 'en'),
       timestamp: Date.now(),
     };
 
@@ -50,49 +58,90 @@ export function ChatPanel() {
     setInput('');
     setLoading(true);
 
+    // Process with chatbot
+    const chatbotResponse = processChatbotMessage(input);
+    setCurrentLanguage(chatbotResponse.language);
+
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    // Analyze sentiment
-    const sentiment = analyzeSentiment(input, userMessage.language);
+    // Add to history
     addToHistory({
       text: input,
       language: userMessage.language,
-      sentiment,
+      sentiment: chatbotResponse.sentiment,
     });
 
-    // Generate bot reply
-    const botReply = generateBotReply(input, userMessage.language);
-
+    // Create bot message
     const botMessage: Message = {
       id: `msg-${Date.now() + 1}`,
       role: 'bot',
-      text: botReply,
-      language: userMessage.language,
-      sentiment,
+      text: chatbotResponse.bot_message,
+      language: chatbotResponse.language,
+      sentiment: {
+        label: chatbotResponse.sentiment.label,
+        score: chatbotResponse.sentiment.score,
+      },
+      serviceLabel: chatbotResponse.service_label || undefined,
       timestamp: Date.now(),
+      chatbotResponse,
     };
 
     setMessages(prev => [...prev, botMessage]);
+
+    // Handle UI actions
+    if (chatbotResponse.ui_actions.length > 0) {
+      const action = chatbotResponse.ui_actions[0];
+      if (action.type === 'OPEN_ORDER_INFO_POPUP') {
+        setShowOrderPopup(true);
+      }
+    }
+
+    // Show clarification menu if needed
+    if (chatbotResponse.needs_clarification) {
+      setShowClarification(true);
+      setClarificationLanguage(chatbotResponse.language);
+    }
+
     setLoading(false);
   };
 
-  const generateBotReply = (userText: string, language: 'vi' | 'en'): string => {
-    const replies = {
-      vi: [
-        'Tôi hiểu vấn đề của bạn. Hãy cho tôi biết thêm chi tiết.',
-        'Cảm ơn bạn đã liên hệ. Tôi sẽ giúp bạn giải quyết.',
-        'Vấn đề này rất quan trọng. Chúng tôi sẽ xử lý ngay.',
-      ],
-      en: [
-        'I understand your concern. Please tell me more details.',
-        'Thank you for contacting us. I\'ll help you resolve this.',
-        'This issue is important. We\'ll handle it right away.',
-      ],
-    };
+  const handleClarificationSelect = (label: ServiceLabel) => {
+    setShowClarification(false);
+    // Add a message indicating the user selected an option
+    const selectedOption = [
+      { n: 1, vi: 'Tra cứu đơn hàng', en: 'Order lookup' },
+      { n: 2, vi: 'Đổi trả', en: 'Return/Exchange' },
+      { n: 3, vi: 'Bảo hành', en: 'Warranty' },
+      { n: 4, vi: 'Giá/ Thông tin sản phẩm', en: 'Pricing/Product info' },
+      { n: 5, vi: 'Lỗi kỹ thuật', en: 'Technical issue' },
+      { n: 6, vi: 'Gặp nhân viên', en: 'Talk to an agent' },
+    ].find(opt => opt.n === label);
 
-    const replyList = replies[language];
-    return replyList[Math.floor(Math.random() * replyList.length)];
+    if (selectedOption) {
+      const text = clarificationLanguage === 'vi' ? selectedOption.vi : selectedOption.en;
+      setInput(text);
+      // Trigger send after a short delay
+      setTimeout(() => {
+        setInput(text);
+        // Manually trigger send
+        const event = new KeyboardEvent('keydown', { key: 'Enter' });
+        document.dispatchEvent(event);
+      }, 100);
+    }
+  };
+
+  const getSentimentColor = (label: string): string => {
+    switch (label) {
+      case 'positive':
+        return '#22c55e';
+      case 'negative':
+        return '#ef4444';
+      case 'neutral':
+        return '#f59e0b';
+      default:
+        return '#6b7280';
+    }
   };
 
   return (
@@ -100,7 +149,7 @@ export function ChatPanel() {
       {/* Header */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold text-foreground">Demo Chat</h2>
+          <h2 className="text-lg font-semibold text-foreground">Support Chat</h2>
           <Select value={languageMode} onValueChange={(value: any) => setLanguageMode(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
@@ -124,7 +173,7 @@ export function ChatPanel() {
             <div className="flex items-center justify-center h-full text-center py-12">
               <div>
                 <p className="text-muted-foreground mb-2">No messages yet</p>
-                <p className="text-sm text-muted-foreground">Start a conversation to see sentiment analysis</p>
+                <p className="text-sm text-muted-foreground">Start a conversation with the support bot</p>
               </div>
             </div>
           )}
@@ -148,27 +197,35 @@ export function ChatPanel() {
                       variant="outline"
                       className="text-xs"
                       style={{
-                        backgroundColor: getSentimentColor(message.sentiment.score),
+                        backgroundColor: getSentimentColor(message.sentiment.label),
                         color: 'white',
-                        borderColor: getSentimentColor(message.sentiment.score),
+                        borderColor: getSentimentColor(message.sentiment.label),
                       }}
                     >
-                      {message.sentiment.label}
+                      {message.sentiment.label.toUpperCase()}
                     </Badge>
                     <span className="text-xs opacity-75">
-                      {message.sentiment.score.toFixed(2)}
+                      {(message.sentiment.score * 100).toFixed(0)}%
                     </span>
+                  </div>
+                )}
+                {message.serviceLabel && (
+                  <div className="mt-2">
+                    <Badge variant="secondary" className="text-xs">
+                      Label {message.serviceLabel}
+                    </Badge>
                   </div>
                 )}
               </div>
             </div>
           ))}
 
-          {loading && (
+          {showClarification && (
             <div className="flex justify-start">
-              <div className="bg-muted text-foreground px-4 py-3 rounded-lg">
-                <Loader2 className="w-4 h-4 animate-spin" />
-              </div>
+              <ClarificationMenu
+                language={clarificationLanguage}
+                onSelect={handleClarificationSelect}
+              />
             </div>
           )}
 
@@ -180,28 +237,37 @@ export function ChatPanel() {
       <div className="p-4 border-t border-border">
         <div className="flex gap-2">
           <Input
-            placeholder="Type your message..."
+            placeholder={currentLanguage === 'vi' ? 'Nhập tin nhắn...' : 'Type a message...'}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
+              if (e.key === 'Enter' && !loading) {
                 handleSendMessage();
               }
             }}
             disabled={loading}
-            className="flex-1"
           />
           <Button
             onClick={handleSendMessage}
             disabled={loading || !input.trim()}
-            size="icon"
             className="bg-primary hover:bg-primary/90"
           >
-            <Send className="w-4 h-4" />
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           </Button>
         </div>
       </div>
+
+      {/* Order Info Popup */}
+      <OrderInfoPopup
+        isOpen={showOrderPopup}
+        onClose={() => setShowOrderPopup(false)}
+        language={currentLanguage}
+      />
     </div>
   );
+}
+
+function detectLanguageSimple(message: string): 'vi' | 'en' {
+  const vietnameseChars = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  return vietnameseChars.test(message) ? 'vi' : 'en';
 }
