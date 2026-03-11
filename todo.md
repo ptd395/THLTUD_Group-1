@@ -63,3 +63,9 @@
 - [x] Create professional VoiceModal with waveform visualization
 - [x] Add error handling for unsupported browsers
 - [ ] Write vitest tests for speech service
+
+
+## Voice Sentiment Preview (New)
+- [x] Add VoiceModal to SentimentConfigForm preview tab
+- [x] Integrate voice input with sentiment preview
+- [x] Test voice sentiment analysis in settings

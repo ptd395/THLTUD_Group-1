@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { SentimentConfig, analyzeSentiment, getSentimentColor } from '@/lib/sentiment';
 import { useSentiment } from '@/contexts/SentimentContext';
-import { RotateCcw, Save } from 'lucide-react';
+import { RotateCcw, Save, Mic } from 'lucide-react';
+import VoiceModal from './VoiceModal';
 
 export function SentimentConfigForm() {
   const { config, updateConfig, resetConfig } = useSentiment();
@@ -17,6 +18,7 @@ export function SentimentConfigForm() {
   const [previewText, setPreviewText] = useState('');
   const [previewLanguage, setPreviewLanguage] = useState<'vi' | 'en'>('en');
   const [previewResult, setPreviewResult] = useState<any>(null);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
 
   const handleSave = () => {
     updateConfig(localConfig);
@@ -34,6 +36,16 @@ export function SentimentConfigForm() {
     if (!previewText.trim()) return;
     const result = analyzeSentiment(previewText, previewLanguage);
     setPreviewResult(result);
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    setPreviewText(transcript);
+    setShowVoiceModal(false);
+    // Auto-analyze after voice input
+    setTimeout(() => {
+      const result = analyzeSentiment(transcript, previewLanguage);
+      setPreviewResult(result);
+    }, 100);
   };
 
   const updateThreshold = (key: keyof typeof localConfig.thresholds, value: number) => {
@@ -299,10 +311,21 @@ export function SentimentConfigForm() {
                 />
               </div>
 
-              {/* Preview Button */}
-              <Button onClick={handlePreview} className="w-full bg-primary hover:bg-primary/90">
-                Analyze Sentiment
-              </Button>
+              {/* Action Buttons */}
+              <div className="flex gap-2">
+                <Button onClick={handlePreview} className="flex-1 bg-primary hover:bg-primary/90">
+                  Analyze Sentiment
+                </Button>
+                <Button
+                  onClick={() => setShowVoiceModal(true)}
+                  variant="outline"
+                  className="flex-1"
+                  title="Use voice input"
+                >
+                  <Mic className="w-4 h-4 mr-2" />
+                  Voice Input
+                </Button>
+              </div>
 
               {/* Results */}
               {previewResult && (
@@ -332,6 +355,15 @@ export function SentimentConfigForm() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Voice Modal */}
+      <VoiceModal
+        isOpen={showVoiceModal}
+        onClose={() => setShowVoiceModal(false)}
+        onTranscript={handleVoiceTranscript}
+        language={previewLanguage}
+        onLanguageChange={setPreviewLanguage}
+      />
 
       {/* Action Buttons */}
       <div className="flex gap-2">
