@@ -9,6 +9,7 @@ import { useSentiment } from '@/contexts/SentimentContext';
 import { processChatbotMessage, type ChatbotResponse, type ServiceLabel } from '@/lib/chatbot';
 import OrderInfoPopup from './OrderInfoPopup';
 import ClarificationMenu from './ClarificationMenu';
+import VoiceInput from './VoiceInput';
 
 interface Message {
   id: string;
@@ -34,6 +35,8 @@ export function ChatPanel() {
   const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('en');
   const [showClarification, setShowClarification] = useState(false);
   const [clarificationLanguage, setClarificationLanguage] = useState<'vi' | 'en'>('en');
+  const [voiceLanguage, setVoiceLanguage] = useState<'vi' | 'en'>('en');
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom
@@ -129,6 +132,11 @@ export function ChatPanel() {
         document.dispatchEvent(event);
       }, 100);
     }
+  };
+
+  const handleVoiceTranscript = (transcript: string) => {
+    setInput(transcript);
+    setShowVoiceInput(false);
   };
 
   const getSentimentColor = (label: string): string => {
@@ -233,27 +241,47 @@ export function ChatPanel() {
         </div>
       </ScrollArea>
 
+      {/* Voice Input Section */}
+      {showVoiceInput && (
+        <div className="p-4 border-t border-border">
+          <VoiceInput
+            onTranscript={handleVoiceTranscript}
+            language={voiceLanguage}
+            onLanguageChange={setVoiceLanguage}
+          />
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-4 border-t border-border">
-        <div className="flex gap-2">
-          <Input
-            placeholder={currentLanguage === 'vi' ? 'Nhập tin nhắn...' : 'Type a message...'}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === 'Enter' && !loading) {
-                handleSendMessage();
-              }
-            }}
-            disabled={loading}
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={loading || !input.trim()}
-            className="bg-primary hover:bg-primary/90"
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          </Button>
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder={currentLanguage === 'vi' ? 'Nhập tin nhắn...' : 'Type a message...'}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && !loading) {
+                  handleSendMessage();
+                }
+              }}
+              disabled={loading}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={loading || !input.trim()}
+              className="bg-primary hover:bg-primary/90"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+            <Button
+              onClick={() => setShowVoiceInput(!showVoiceInput)}
+              variant="outline"
+              title={showVoiceInput ? 'Hide voice input' : 'Show voice input'}
+            >
+              🎤
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -263,6 +291,11 @@ export function ChatPanel() {
         onClose={() => setShowOrderPopup(false)}
         language={currentLanguage}
       />
+
+      {/* Voice Input Popup */}
+      {showVoiceInput && (
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowVoiceInput(false)} />
+      )}
     </div>
   );
 }

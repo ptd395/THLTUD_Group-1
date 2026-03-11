@@ -51,3 +51,15 @@
 - [x] Build clarification menu component
 - [x] Write vitest tests for chatbot logic
 - [x] Test all scenarios and language combinations
+
+
+## Voice Recognition Implementation (New)
+- [x] Create speech recognition service with Web Speech API
+- [x] Add language detection for speech (Vietnamese/English)
+- [x] Build voice input UI component with recording button
+- [x] Add real-time transcription display
+- [x] Integrate voice input into Chat interface
+- [x] Add language selection for speech recognition
+- [ ] Test speech recognition with various accents
+- [x] Add error handling for unsupported browsers
+- [ ] Write vitest tests for speech service
