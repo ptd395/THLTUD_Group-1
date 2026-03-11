@@ -3,9 +3,6 @@ import { ChatPanel } from '@/components/ChatPanel';
 import { SentimentPanel } from '@/components/SentimentPanel';
 import { MetricsPanel } from '@/components/MetricsPanel';
 import { VoiceDemoPanel } from '@/components/VoiceDemoPanel';
-import { Button } from '@/components/ui/button';
-import { useLocation } from 'wouter';
-import { Settings, Home } from 'lucide-react';
 
 /**
  * Demo Screen: /demo
@@ -17,33 +14,14 @@ import { Settings, Home } from 'lucide-react';
  * - Voice demo harness for showcasing ASR/TTS pipeline
  */
 export default function Demo() {
-  const [, navigate] = useLocation();
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-slate-200 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">AI Support Copilot</h1>
+            <h1 className="text-2xl font-bold text-foreground">Nova Tech Copilot</h1>
             <p className="text-sm text-muted-foreground">Sentiment Analysis Demo</p>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/')}
-              className="flex items-center gap-2"
-            >
-              <Home className="w-4 h-4" />
-              Home
-            </Button>
-            <Button
-              onClick={() => navigate('/settings/sentiment')}
-              className="bg-primary hover:bg-primary/90 flex items-center gap-2"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </Button>
           </div>
         </div>
       </header>

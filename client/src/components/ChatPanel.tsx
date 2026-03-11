@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, Mic } from 'lucide-react';
 import { useSentiment } from '@/contexts/SentimentContext';
 import { processChatbotMessage, type ChatbotResponse, type ServiceLabel } from '@/lib/chatbot';
 import OrderInfoPopup from './OrderInfoPopup';
@@ -26,12 +26,13 @@ interface Message {
 }
 
 export function ChatPanel() {
-  const { config, addToHistory } = useSentiment();
+  const { addToHistory } = useSentiment();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [languageMode, setLanguageMode] = useState<'auto' | 'vi' | 'en'>('auto');
   const [showOrderPopup, setShowOrderPopup] = useState(false);
+  const [orderContextLabel, setOrderContextLabel] = useState<ServiceLabel | null>(null);
   const [currentLanguage, setCurrentLanguage] = useState<'vi' | 'en'>('en');
   const [showClarification, setShowClarification] = useState(false);
   const [clarificationLanguage, setClarificationLanguage] = useState<'vi' | 'en'>('en');
@@ -46,14 +47,15 @@ export function ChatPanel() {
     }
   }, [messages]);
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
+  const handleSendMessage = async (overrideText?: string) => {
+    const messageText = (overrideText ?? input).trim();
+    if (!messageText || loading) return;
 
     const userMessage: Message = {
       id: `msg-${Date.now()}`,
       role: 'user',
-      text: input,
-      language: languageMode === 'auto' ? detectLanguageSimple(input) : (languageMode as 'vi' | 'en'),
+      text: messageText,
+      language: languageMode === 'auto' ? detectLanguageSimple(messageText) : (languageMode as 'vi' | 'en'),
       timestamp: Date.now(),
     };
 
@@ -62,7 +64,7 @@ export function ChatPanel() {
     setLoading(true);
 
     // Process with chatbot
-    const chatbotResponse = processChatbotMessage(input);
+    const chatbotResponse = processChatbotMessage(messageText);
     setCurrentLanguage(chatbotResponse.language);
 
     // Simulate API call
@@ -70,7 +72,7 @@ export function ChatPanel() {
 
     // Add to history
     addToHistory({
-      text: input,
+      text: messageText,
       language: userMessage.language,
       sentiment: chatbotResponse.sentiment,
     });
@@ -96,6 +98,7 @@ export function ChatPanel() {
     if (chatbotResponse.ui_actions.length > 0) {
       const action = chatbotResponse.ui_actions[0];
       if (action.type === 'OPEN_ORDER_INFO_POPUP') {
+        setOrderContextLabel(chatbotResponse.service_label || null);
         setShowOrderPopup(true);
       }
     }
@@ -111,7 +114,6 @@ export function ChatPanel() {
 
   const handleClarificationSelect = (label: ServiceLabel) => {
     setShowClarification(false);
-    // Add a message indicating the user selected an option
     const selectedOption = [
       { n: 1, vi: 'Tra cứu đơn hàng', en: 'Order lookup' },
       { n: 2, vi: 'Đổi trả', en: 'Return/Exchange' },
@@ -123,15 +125,60 @@ export function ChatPanel() {
 
     if (selectedOption) {
       const text = clarificationLanguage === 'vi' ? selectedOption.vi : selectedOption.en;
-      setInput(text);
-      // Trigger send after a short delay
-      setTimeout(() => {
-        setInput(text);
-        // Manually trigger send
-        const event = new KeyboardEvent('keydown', { key: 'Enter' });
-        document.dispatchEvent(event);
-      }, 100);
+      void handleSendMessage(text);
     }
+  };
+
+  const getLabelName = (label: ServiceLabel, language: 'vi' | 'en') => {
+    const labelMap: Record<ServiceLabel, { vi: string; en: string }> = {
+      1: { vi: 'Tra cứu đơn hàng', en: 'Order lookup' },
+      2: { vi: 'Đổi trả', en: 'Return/Exchange' },
+      3: { vi: 'Bảo hành', en: 'Warranty' },
+      4: { vi: 'Giá / Thông tin sản phẩm', en: 'Pricing/Product info' },
+      5: { vi: 'Lỗi kỹ thuật', en: 'Technical issue' },
+      6: { vi: 'Gặp nhân viên', en: 'Talk to an agent' },
+    };
+
+    return labelMap[label][language];
+  };
+
+  const handleOrderResolved = (details: {
+    orderId: string;
+    status: 'processing' | 'shipping' | 'delivered';
+    etaDate: string;
+  }) => {
+    const statusText =
+      currentLanguage === 'vi'
+        ? details.status === 'processing'
+          ? 'Đang xử lý'
+          : details.status === 'shipping'
+            ? 'Đang giao'
+            : 'Đã giao'
+        : details.status === 'processing'
+          ? 'Processing'
+          : details.status === 'shipping'
+            ? 'Shipping'
+            : 'Delivered';
+
+    const labelText = orderContextLabel
+      ? ` (${getLabelName(orderContextLabel, currentLanguage)})`
+      : '';
+
+    const summary =
+      currentLanguage === 'vi'
+        ? `Đã tra cứu đơn ${details.orderId}${labelText}. Trạng thái hiện tại: ${statusText}. Dự kiến: ${details.etaDate}.`
+        : `Order ${details.orderId}${labelText} is now ${statusText}. Estimated date: ${details.etaDate}.`;
+
+    const systemMessage: Message = {
+      id: `msg-${Date.now()}-order`,
+      role: 'bot',
+      text: summary,
+      language: currentLanguage,
+      timestamp: Date.now(),
+      serviceLabel: orderContextLabel || undefined,
+    };
+
+    setMessages(prev => [...prev, systemMessage]);
   };
 
   const handleVoiceTranscript = (transcript: string) => {
@@ -258,7 +305,7 @@ export function ChatPanel() {
               placeholder={currentLanguage === 'vi' ? 'Nhập tin nhắn...' : 'Type a message...'}
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === 'Enter' && !loading) {
                   handleSendMessage();
                 }
@@ -266,7 +313,9 @@ export function ChatPanel() {
               disabled={loading}
             />
             <Button
-              onClick={handleSendMessage}
+              onClick={() => {
+                void handleSendMessage();
+              }}
               disabled={loading || !input.trim()}
               className="bg-primary hover:bg-primary/90"
             >
@@ -277,7 +326,7 @@ export function ChatPanel() {
               variant="outline"
               title="Voice input"
             >
-              🎤
+              <Mic className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -288,6 +337,8 @@ export function ChatPanel() {
         isOpen={showOrderPopup}
         onClose={() => setShowOrderPopup(false)}
         language={currentLanguage}
+        serviceLabel={orderContextLabel}
+        onOrderResolved={handleOrderResolved}
       />
 
 

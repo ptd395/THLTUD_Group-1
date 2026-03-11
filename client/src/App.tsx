@@ -7,17 +7,50 @@ import Settings from "@/pages/Settings";
 import Dashboard from "@/pages/Dashboard";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import AppTaskbarLayout from "./components/AppTaskbarLayout";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { SentimentProvider } from "./contexts/SentimentContext";
+
+function HomeRoute() {
+  return (
+    <AppTaskbarLayout>
+      <Home />
+    </AppTaskbarLayout>
+  );
+}
+
+function DemoRoute() {
+  return (
+    <AppTaskbarLayout>
+      <Demo />
+    </AppTaskbarLayout>
+  );
+}
+
+function SettingsRoute() {
+  return (
+    <AppTaskbarLayout>
+      <Settings />
+    </AppTaskbarLayout>
+  );
+}
+
+function DashboardRoute() {
+  return (
+    <AppTaskbarLayout>
+      <Dashboard />
+    </AppTaskbarLayout>
+  );
+}
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/demo"} component={Demo} />
-      <Route path={"/settings/sentiment"} component={Settings} />
-      <Route path={"/dashboard"} component={Dashboard} />
+      <Route path={"/"} component={HomeRoute} />
+      <Route path={"/demo"} component={DemoRoute} />
+      <Route path={"/settings/sentiment"} component={SettingsRoute} />
+      <Route path={"/dashboard"} component={DashboardRoute} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />

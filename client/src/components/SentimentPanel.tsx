@@ -32,6 +32,7 @@ export function SentimentPanel() {
     : null;
 
   const gaugeValue = currentSentiment ? ((currentSentiment.score + 1) / 2) * 100 : 50;
+  const clampedGaugeValue = Math.min(98, Math.max(2, gaugeValue));
 
   return (
     <div className="space-y-4">
@@ -68,10 +69,11 @@ export function SentimentPanel() {
                 <p className="text-xs text-muted-foreground">Sentiment Range</p>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Negative</span>
-                  <div className="flex-1 h-2 bg-gradient-to-r from-red-500 via-amber-500 to-green-500 rounded-full relative">
+                  <div className="relative h-6 flex-1">
+                    <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full bg-gradient-to-r from-red-500 via-amber-500 to-green-500" />
                     <div
-                      className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-foreground rounded-full shadow-lg"
-                      style={{ left: `${gaugeValue}%`, transform: 'translate(-50%, -50%)' }}
+                      className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground shadow-lg transition-[left] duration-300"
+                      style={{ left: `${clampedGaugeValue}%` }}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">Positive</span>

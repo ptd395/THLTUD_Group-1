@@ -42,8 +42,14 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         const eventData = {
           ...input,
-          labelConfidence: input.labelConfidence ? input.labelConfidence.toString() : undefined,
-          sentimentScore: input.sentimentScore ? input.sentimentScore.toString() : undefined,
+          labelConfidence:
+            input.labelConfidence !== undefined
+              ? input.labelConfidence.toString()
+              : undefined,
+          sentimentScore:
+            input.sentimentScore !== undefined
+              ? input.sentimentScore.toString()
+              : undefined,
         } as any;
         const event = await logMetricsEvent(eventData);
         return { success: !!event, eventId: event?.id };

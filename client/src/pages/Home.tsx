@@ -22,11 +22,11 @@ export default function Home() {
   const [, navigate] = useLocation();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-slate-200 bg-transparent">
         <div className="max-w-6xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold text-foreground">AI Support Copilot</h1>
+          <h1 className="text-3xl font-bold text-foreground">Nova Tech Copilot</h1>
           <p className="text-muted-foreground">Real-time sentiment analysis for support teams</p>
         </div>
       </header>
@@ -153,7 +153,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border bg-card mt-12">
+      <footer className="border-t border-slate-200 bg-transparent mt-12">
         <div className="max-w-6xl mx-auto px-4 py-6 text-center text-sm text-muted-foreground">
           <p>AI Support Copilot MVP • Sentiment Analysis & Metrics Configuration</p>
         </div>

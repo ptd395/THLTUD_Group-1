@@ -96,7 +96,7 @@ export const DEFAULT_SENTIMENT_CONFIG: SentimentConfig = {
  */
 export function detectLanguage(text: string): 'vi' | 'en' {
   // Vietnamese characters
-  const vietnameseChars = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
+  const vietnameseChars = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/gi;
   
   // Count Vietnamese characters
   const vietnameseMatches = (text.match(vietnameseChars) || []).length;
@@ -133,7 +133,7 @@ export function analyzeSentiment(text: string, language: 'vi' | 'en'): Sentiment
   let label = 'Neutral';
   
   if (negCount > posCount) {
-    score = Math.min(-0.3 - (negCount * 0.2), -1);
+    score = Math.max(-0.3 - (negCount * 0.2), -1);
     label = 'Negative';
   } else if (posCount > negCount) {
     score = Math.min(0.3 + (posCount * 0.2), 1);
@@ -209,24 +209,22 @@ export function checkEscalationTrigger(
   }
   
   let negativeStreak = 0;
-  let maxStreak = 0;
   
-  // Count consecutive negative turns
+  // Count current consecutive negative turns (latest to oldest until first non-negative)
   for (let i = sentiments.length - 1; i >= 0; i--) {
     if (sentiments[i].score < config.thresholds.negativeThreshold) {
       negativeStreak++;
-      maxStreak = Math.max(maxStreak, negativeStreak);
     } else {
-      negativeStreak = 0;
+      break;
     }
   }
   
   const escalationSuggested =
-    maxStreak >= config.thresholds.consecutiveNegativeCount ||
-    (sentiments.length > 0 && sentiments[sentiments.length - 1].score < config.thresholds.escalationThreshold);
+    negativeStreak >= config.thresholds.consecutiveNegativeCount ||
+    sentiments[sentiments.length - 1].score < config.thresholds.escalationThreshold;
   
   return {
     escalationSuggested,
-    negativeStreak: maxStreak,
+    negativeStreak,
   };
 }
