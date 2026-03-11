@@ -9,7 +9,7 @@ import { useSentiment } from '@/contexts/SentimentContext';
 import { processChatbotMessage, type ChatbotResponse, type ServiceLabel } from '@/lib/chatbot';
 import OrderInfoPopup from './OrderInfoPopup';
 import ClarificationMenu from './ClarificationMenu';
-import VoiceInput from './VoiceInput';
+import VoiceModal from './VoiceModal';
 
 interface Message {
   id: string;
@@ -241,16 +241,14 @@ export function ChatPanel() {
         </div>
       </ScrollArea>
 
-      {/* Voice Input Section */}
-      {showVoiceInput && (
-        <div className="p-4 border-t border-border">
-          <VoiceInput
-            onTranscript={handleVoiceTranscript}
-            language={voiceLanguage}
-            onLanguageChange={setVoiceLanguage}
-          />
-        </div>
-      )}
+      {/* Voice Modal */}
+      <VoiceModal
+        isOpen={showVoiceInput}
+        onClose={() => setShowVoiceInput(false)}
+        onTranscript={handleVoiceTranscript}
+        language={voiceLanguage}
+        onLanguageChange={setVoiceLanguage}
+      />
 
       {/* Input */}
       <div className="p-4 border-t border-border">
@@ -275,9 +273,9 @@ export function ChatPanel() {
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </Button>
             <Button
-              onClick={() => setShowVoiceInput(!showVoiceInput)}
+              onClick={() => setShowVoiceInput(true)}
               variant="outline"
-              title={showVoiceInput ? 'Hide voice input' : 'Show voice input'}
+              title="Voice input"
             >
               🎤
             </Button>
@@ -292,10 +290,7 @@ export function ChatPanel() {
         language={currentLanguage}
       />
 
-      {/* Voice Input Popup */}
-      {showVoiceInput && (
-        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowVoiceInput(false)} />
-      )}
+
     </div>
   );
 }
