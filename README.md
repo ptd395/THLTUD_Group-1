@@ -53,6 +53,8 @@ Nhờ đó doanh nghiệp có thể:
 
 ## Màn Hình Chính
 
+![Home]()
+
 ## Hướng Dẫn Sử Dụng
 
 - Đăng nhập hệ thống
