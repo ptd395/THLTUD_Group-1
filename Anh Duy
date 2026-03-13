@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OmniChannel — AI Customer Support</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f0f2f5;display:flex;height:100vh;overflow:hidden;color:#111827}
+/* ── LAYOUT ── */
+#app{display:flex;width:100%;height:100vh}
+/* ── LEFT NAV ── */
+.sidenav{width:60px;background:#fff;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:8px;border-right:1px solid #e5e7eb;flex-shrink:0;z-index:10}
+.sidenav .logo{width:38px;height:38px;background:#2563EB;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+.sidenav .logo svg{width:22px;height:22px;fill:#fff}
+.nav-item{width:44px;height:44px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;gap:2px;transition:background .2s}
+.nav-item:hover{background:#f0f4ff}
+.nav-item.active{background:#eff6ff}
+.nav-item svg{width:20px;height:20px}
+.nav-item span{font-size:9px;font-weight:600;color:#6b7280;text-align:center;line-height:1.2}
+.nav-item.active span{color:#2563EB}
+/* ── PAGES ── */
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex}
+/* ── OMNI CHANNEL PAGE ── */
+#page-omni{flex-direction:row}
+/* ── CONV LIST ── */
+.conv-list{width:310px;background:#fff;display:flex;flex-direction:column;border-right:1px solid #e5e7eb;flex-shrink:0}
+.conv-list h2{font-size:16px;font-weight:700;padding:16px 16px 10px}
+.search-wrap{padding:0 12px 10px}
+.search-wrap input{width:100%;padding:8px 12px 8px 32px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;background:#f9fafb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center/16px;outline:none;font-family:inherit}
+/* channel filter tabs */
+.filter-tabs{display:flex;gap:6px;padding:0 10px 10px;overflow-x:auto;scrollbar-width:none}
+.filter-tabs::-webkit-scrollbar{display:none}
+.ftab{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;border:none;background:#f3f4f6;color:#6b7280;transition:all .2s}
+.ftab img,.ftab svg{width:16px;height:16px}
+.ftab.active{background:#1d4ed8;color:#fff}
+.ftab.active .ftab-icon-wa{filter:brightness(10)}
+/* conv items */
+.conv-items{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#e5e7eb #fff}
+.conv-item{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;transition:background .15s;border-left:3px solid transparent}
+.conv-item:hover{background:#f9fafb}
+.conv-item.active{background:#eff6ff;border-left-color:#2563EB}
+.avatar{position:relative;flex-shrink:0}
+.avatar-img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#6b7280;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.ch-badge{position:absolute;bottom:-2px;right:-2px;width:17px;height:17px;border-radius:50%;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
+.ch-badge img{width:13px;height:13px;border-radius:50%}
+.conv-info{flex:1;min-width:0}
+.conv-name-row{display:flex;justify-content:space-between;align-items:center}
+.conv-name{font-size:13px;font-weight:600;color:#111827;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.conv-time{font-size:11px;color:#9ca3af;flex-shrink:0;margin-left:4px}
+.conv-snippet{font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+/* ── CHAT PANEL ── */
+.chat-panel{flex:1;display:flex;flex-direction:column;background:#fff;min-width:0}
+.chat-header{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid #e5e7eb;gap:12px}
+.chat-header .avatar-img{width:38px;height:38px;font-size:13px}
+.chat-header .hinfo h3{font-size:15px;font-weight:700;color:#111827}
+.chat-header .hinfo p{font-size:12px;color:#6b7280}
+.chat-header .more-btn{margin-left:auto;background:none;border:none;cursor:pointer;padding:4px;border-radius:6px;display:flex;align-items:center;color:#6b7280}
+.chat-header .more-btn:hover{background:#f3f4f6}
+.messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin;scrollbar-color:#e5e7eb transparent;background:#fafafa}
+.msg-bubble{max-width:60%;padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.5;flex-shrink:0}
+.msg-bubble.them{background:#fff;color:#111827;border:1px solid #e5e7eb;align-self:flex-start;border-bottom-left-radius:4px}
+.msg-bubble.me{background:#2563EB;color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.msg-time{font-size:11px;color:#9ca3af;text-align:center;margin:8px 0 4px}
+.day-sep{text-align:center;margin:12px 0}
+.day-sep span{background:#e5e7eb;color:#6b7280;font-size:11px;padding:4px 12px;border-radius:20px}
+.sent-by{font-size:10px;color:#9ca3af;text-align:center;margin-bottom:8px}
+.read-tick{color:#93c5fd;font-size:11px;align-self:flex-end}
+/* reply box */
+.reply-box{border-top:1px solid #e5e7eb;padding:12px 16px;background:#fff}
+.reply-tabs{display:flex;gap:6px;margin-bottom:10px}
+.reply-tab{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:#374151;transition:all .15s}
+.reply-tab img{width:15px;height:15px;border-radius:3px}
+.reply-tab.active{background:#eff6ff;border-color:#bfdbfe;color:#2563EB}
+.reply-input-row{display:flex;align-items:center;gap:8px}
+.reply-input-row textarea{flex:1;border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;font-size:13px;font-family:inherit;resize:none;outline:none;height:44px;line-height:1.4;background:#f9fafb;color:#374151}
+.reply-input-row textarea:focus{border-color:#93c5fd;background:#fff}
+.icon-btn{background:none;border:none;cursor:pointer;color:#6b7280;padding:6px;border-radius:8px;display:flex;align-items:center;transition:background .15s}
+.icon-btn:hover{background:#f3f4f6}
+.send-btn{background:#2563EB;color:#fff;border:none;border-radius:10px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}
+.send-btn:hover{background:#1d4ed8}
+/* ── RIGHT PANEL ── */
+.right-panel{width:280px;background:#fff;border-left:1px solid #e5e7eb;display:none;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.right-panel.open{display:flex}
+.rp-top{display:flex;flex-direction:column;align-items:center;padding:20px 16px 14px;border-bottom:1px solid #e5e7eb}
+.rp-avatar{width:64px;height:64px;border-radius:50%;background:#2563EB;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;margin-bottom:10px}
+.rp-top h3{font-size:16px;font-weight:700;color:#111827}
+.rp-top p{font-size:12px;color:#6b7280;margin-top:2px}
+.rp-tags{display:flex;gap:6px;margin-top:10px}
+.tag{font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:.5px}
+.tag.prospect{background:#dbeafe;color:#1d4ed8}
+.tag.vip{background:#fce7f3;color:#be185d}
+.rp-section{padding:14px 16px;border-bottom:1px solid #f3f4f6}
+.rp-section h4{font-size:10px;font-weight:700;color:#9ca3af;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px}
+.contact-row{margin-bottom:8px}
+.contact-row .val{font-size:13px;font-weight:500;color:#111827}
+.contact-row .lbl{font-size:11px;color:#9ca3af;margin-top:1px}
+.activity-item{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px}
+.act-dot{width:10px;height:10px;border-radius:50%;background:#2563EB;flex-shrink:0;margin-top:3px}
+.act-dot.gray{background:#d1d5db}
+.act-text .name{font-size:13px;font-weight:500;color:#111827}
+.act-text .when{font-size:11px;color:#9ca3af}
+.create-deal-btn{margin:16px;background:#2563EB;color:#fff;border:none;border-radius:10px;padding:12px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:background .15s}
+.create-deal-btn:hover{background:#1d4ed8}
+/* ── IMAGE PICKER ── */
+.img-picker-popup{display:none;position:fixed;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px;box-shadow:0 8px 32px rgba(37,99,235,.15);z-index:9999;width:340px}
+.img-picker-popup.open{display:block}
+.img-picker-popup h5{font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.img-picker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.img-picker-item{border-radius:10px;overflow:hidden;cursor:pointer;border:2px solid transparent;transition:border-color .15s,transform .15s}
+.img-picker-item:hover{border-color:#2563EB;transform:scale(1.04)}
+.img-picker-item img{width:100%;height:68px;object-fit:cover;display:block}
+.img-picker-item .pname{font-size:10px;text-align:center;padding:3px 2px;color:#374151;font-weight:500;line-height:1.2}
+/* image message bubble */
+.msg-img-bubble{align-self:flex-end;border-radius:14px;overflow:hidden;max-width:220px;border:1px solid #e5e7eb;box-shadow:0 4px 12px rgba(0,0,0,.12);animation:bubble-pop .28s ease;flex-shrink:0}
+@keyframes bubble-pop{from{opacity:0;transform:scale(.85) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.msg-img-bubble img{width:220px;height:165px;object-fit:cover;display:block}
+.msg-img-bubble .img-caption{font-size:11px;padding:6px 10px;background:#2563EB;color:#fff;font-weight:500}
+.reply-input-wrap{position:relative;display:inline-flex;align-items:center;flex-shrink:0}
+/* ── INTEGRATIONS PAGE ── */
+#page-integrations{flex-direction:column;background:#f0f2f5;padding:32px 36px;overflow-y:auto}
+#page-integrations h1{font-size:24px;font-weight:700;color:#111827}
+#page-integrations p.sub{font-size:14px;color:#6b7280;margin-top:4px;margin-bottom:28px}
+.integrations-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:860px}
+.int-card{background:#fff;border-radius:16px;padding:20px;position:relative;border:1px solid #e5e7eb;transition:box-shadow .2s}
+.int-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.int-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+.int-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px}
+.int-icon.wa{background:#e9fce9}
+.int-icon.ms{background:#fff0f3}
+.int-icon.em{background:#fff3f0}
+.int-icon.wb{background:#eff6ff}
+.int-icon.ig{background:linear-gradient(135deg,#fdf497,#fd5949,#d6249f,#285AEB);opacity:.85;font-size:20px}
+.int-icon.zo{background:#f0f6ff}
+/* toggle */
+.toggle{position:relative;display:inline-block;width:42px;height:24px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#d1d5db;border-radius:24px;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked+.toggle-slider{background:#2563EB}
+.toggle input:checked+.toggle-slider:before{transform:translateX(18px)}
+.int-name{font-size:15px;font-weight:700;color:#111827;margin-top:4px}
+.int-status{font-size:12px;font-weight:600;margin-bottom:2px}
+.int-status.connected{color:#2563EB}
+.int-status.disconnected{color:#9ca3af}
+.int-count{font-size:28px;font-weight:700;color:#2563EB;line-height:1}
+.int-label{font-size:12px;color:#9ca3af;margin-top:2px}
+/* ── MODAL ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.25);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:16px;padding:32px 28px;max-width:400px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal h3{font-size:18px;font-weight:700;margin-bottom:10px;color:#111827}
+.modal p{font-size:14px;color:#6b7280;margin-bottom:24px}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.modal-btns button{padding:10px 32px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn-cancel{background:#f3f4f6;border:1px solid #e5e7eb;color:#374151}
+.btn-cancel:hover{background:#e5e7eb}
+.btn-ok{background:#2563EB;border:none;color:#fff}
+.btn-ok:hover{background:#1d4ed8}
+/* scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ── SIDE NAV ── -->
+<nav class="sidenav">
+  <div class="logo">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+  </div>
+  <div class="nav-item active" id="nav-omni" onclick="showPage('omni')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <span style="color:#2563EB">Omni<br>chanel</span>
+  </div>
+  <div class="nav-item" id="nav-int" onclick="showPage('integrations')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+    <span>Integra-<br>tions</span>
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     PAGE: OMNI CHANNEL
+═══════════════════════════════════════ -->
+<div class="page active" id="page-omni">
+
+  <!-- CONVERSATION LIST -->
+  <div class="conv-list">
+    <h2>Omni chanel</h2>
+    <div class="search-wrap">
+      <input type="text" placeholder="Search conversations..." id="search-input" oninput="filterConvs(this.value)"/>
+    </div>
+    <div class="filter-tabs" id="filter-tabs">
+      <button class="ftab active" data-ch="all" onclick="selectFilter('all')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="4" width="16" height="3" rx="1.5"/><rect x="2" y="9" width="16" height="3" rx="1.5"/><rect x="2" y="14" width="10" height="3" rx="1.5"/></svg>
+        All
+      </button>
+      <button class="ftab" data-ch="whatsapp" onclick="selectFilter('whatsapp')">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="wa"/>
+        WhatsApp
+      </button>
+      <button class="ftab" data-ch="website" onclick="selectFilter('website')">
+        <svg viewBox="0 0 20 20" fill="#2563EB"><circle cx="10" cy="10" r="9" fill="#dbeafe"/><circle cx="10" cy="10" r="9" fill="none" stroke="#2563EB" stroke-width="1.5"/><path d="M10 3c-3.9 4-3.9 10 0 14M10 3c3.9 4 3.9 10 0 14M3 10h14" stroke="#2563EB" stroke-width="1.2" fill="none"/></svg>
+        Website
+      </button>
+      <button class="ftab" data-ch="email" onclick="selectFilter('email')">
+        <svg viewBox="0 0 20 20" fill="none"><rect x="2" y="5" width="16" height="12" rx="2" fill="#fee2e2" stroke="#ef4444" stroke-width="1.2"/><path d="M2 7l8 5 8-5" stroke="#ef4444" stroke-width="1.2"/></svg>
+        Email
+      </button>
+      <button class="ftab" data-ch="messenger" onclick="selectFilter('messenger')">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg" alt="ms"/>
+        Messenger
+      </button>
+    </div>
+    <div class="conv-items" id="conv-items"></div>
+  </div>
+
+  <!-- CHAT PANEL -->
+  <div class="chat-panel">
+    <div class="chat-header" id="chat-header">
+      <div class="avatar"><div class="avatar-img" id="chat-avatar" style="background:#2563EB">JD</div><div class="ch-badge" id="chat-ch-badge" style="background:#25d366"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"/></div></div>
+      <div class="hinfo"><h3 id="chat-name">John Doe</h3><p id="chat-sub">CEO @ TechStart • Visiting Pricing Page</p></div>
+      <button class="more-btn" onclick="toggleRightPanel()" title="Customer info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.5" fill="currentColor"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/><circle cx="12" cy="19" r="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="messages" id="messages"></div>
+    <div class="reply-box">
+      <div class="reply-tabs" id="reply-tabs">
+        <button class="reply-tab active" id="rt-wa" onclick="selectReplyTab('wa')"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"/>WhatsApp</button>
+        <button class="reply-tab" id="rt-em" onclick="selectReplyTab('em')">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><rect x="1" y="4" width="18" height="13" rx="2" fill="#fee2e2" stroke="#ef4444" stroke-width="1.2"/><path d="M1 6l9 6 9-6" stroke="#ef4444" stroke-width="1.2"/></svg>Email</button>
+        <button class="reply-tab" id="rt-ms" onclick="selectReplyTab('ms')"><img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg"/>Messenger</button>
+        <button class="reply-tab" id="rt-wb" onclick="selectReplyTab('wb')">
+          <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="9" fill="#dbeafe" stroke="#2563EB" stroke-width="1.2"/><path d="M10 3c-3.5 3.5-3.5 10 0 14M10 3c3.5 3.5 3.5 10 0 14M2 10h16" stroke="#2563EB" stroke-width="1.1" fill="none"/></svg>Website</button>
+      </div>
+      <div class="reply-input-row">
+        <button class="icon-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg>
+        </button>
+        <div class="reply-input-wrap">
+          <button class="icon-btn" id="img-picker-btn" onclick="toggleImgPicker(event)" title="Send product image">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          </button>
+          <!-- IMAGE PICKER POPUP -->
+          <div class="img-picker-popup" id="img-picker-popup">
+            <h5>📱 Phone Products</h5>
+            <div class="img-picker-grid" id="img-picker-grid"></div>
+          </div>
+        </div>
+        <textarea id="reply-textarea" placeholder="Type your reply via WhatsApp..." rows="1"></textarea>
+        <button class="send-btn" onclick="sendMsg()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel" id="right-panel">
+    <div class="rp-top">
+      <div class="rp-avatar" id="rp-avatar">JD</div>
+      <h3 id="rp-name">John Doe</h3>
+      <p id="rp-company">CEO @ TechStart Inc.</p>
+      <div class="rp-tags" id="rp-tags"><span class="tag prospect">PROSPECT</span><span class="tag vip">VIP</span></div>
+    </div>
+    <div class="rp-section">
+      <h4>Contact Info</h4>
+      <div id="rp-contact"></div>
+    </div>
+    <div class="rp-section">
+      <h4>Activity</h4>
+      <div id="rp-activity"></div>
+    </div>
+    <button class="create-deal-btn">CREATE DEAL</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE: INTEGRATIONS
+═══════════════════════════════════════ -->
+<div class="page" id="page-integrations">
+  <h1>Channel Integrations</h1>
+  <p class="sub">Manage and connect your customer touchpoints.</p>
+  <div class="integrations-grid">
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon wa">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" width="28"/>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="confirmToggle(this,'WhatsApp')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">WhatsApp</div>
+      <div class="int-status connected">CONNECTED</div>
+      <div class="int-count">45</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon ms">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg" width="28"/>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="confirmToggle(this,'Messenger')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">Messenger</div>
+      <div class="int-status connected">CONNECTED</div>
+      <div class="int-count">50</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon em">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="15" rx="3" fill="#fecaca" stroke="#ef4444" stroke-width="1.5"/><path d="M2 8l10 7 10-7" stroke="#ef4444" stroke-width="1.5"/></svg>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="confirmToggle(this,'Email')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">Email</div>
+      <div class="int-status connected">CONNECTED</div>
+      <div class="int-count">45</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon wb">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#bfdbfe" stroke="#2563EB" stroke-width="1.5"/><path d="M12 3c-4.5 5-4.5 13 0 18M12 3c4.5 5 4.5 13 0 18M3 12h18" stroke="#2563EB" stroke-width="1.3" fill="none"/></svg>
+        </div>
+        <label class="toggle"><input type="checkbox" checked onchange="confirmToggle(this,'Website')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">Website</div>
+      <div class="int-status connected">CONNECTED</div>
+      <div class="int-count">45</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon ig">📸</div>
+        <label class="toggle"><input type="checkbox" onchange="confirmToggle(this,'Instagram')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">Instagram</div>
+      <div class="int-status disconnected">DISCONNECTED</div>
+      <div class="int-count">45</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+    <div class="int-card">
+      <div class="int-card-top">
+        <div class="int-icon zo" style="background:#e6f0ff;font-weight:700;font-size:14px;color:#2563EB">Zalo</div>
+        <label class="toggle"><input type="checkbox" onchange="confirmToggle(this,'Zalo OA')"/><span class="toggle-slider"></span></label>
+      </div>
+      <div class="int-name">Zalo OA</div>
+      <div class="int-status disconnected">DISCONNECTED</div>
+      <div class="int-count">45</div>
+      <div class="int-label">Active conversations</div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>Confirm Change</h3>
+    <p>Are you sure you want to change the integration status of this channel?</p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal(false)">Cancel</button>
+      <button class="btn-ok" onclick="closeModal(true)">OK</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const avatarColors=['#2563EB','#7c3aed','#059669','#dc2626','#d97706','#0891b2','#be185d'];
+const chIcons={
+  whatsapp:'<img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" style="width:13px;height:13px;border-radius:50%"/>',
+  email:'<svg viewBox="0 0 20 20" fill="none" style="width:13px;height:13px"><rect x="1" y="4" width="18" height="13" rx="2" fill="#fee2e2" stroke="#ef4444" stroke-width="1.5"/><path d="M1 6l9 6 9-6" stroke="#ef4444" stroke-width="1.2"/></svg>',
+  website:'<svg viewBox="0 0 20 20" fill="none" style="width:13px;height:13px"><circle cx="10" cy="10" r="9" fill="#dbeafe" stroke="#2563EB" stroke-width="1.2"/><path d="M10 3c-3.5 3.5-3.5 10 0 14M10 3c3.5 3.5 3.5 10 0 14M2 10h16" stroke="#2563EB" stroke-width="1.1" fill="none"/></svg>',
+  messenger:'<img src="https://upload.wikimedia.org/wikipedia/commons/b/be/Facebook_Messenger_logo_2020.svg" style="width:13px;height:13px;border-radius:50%"/>'
+};
+const chBgColors={whatsapp:'#25d366',email:'#ef4444',website:'#2563EB',messenger:'#0084ff'};
+
+const conversations={
+  all:[
+    {id:1,name:'John Doe',snippet:"Sounds great! Let's schedule...",time:'Now',ch:'whatsapp',initials:'JD',color:'#2563EB',sub:'CEO @ TechStart • Visiting Pricing Page'},
+    {id:2,name:'Sarah Smith',snippet:'Hey! Whats up!',time:'10m',ch:'whatsapp',initials:'SS',color:'#7c3aed',sub:''},
+    {id:3,name:'Tech Corp Support',snippet:'Paperless opt-out email sent',time:'2h',ch:'email',initials:'TC',color:'#059669',sub:''},
+    {id:4,name:'Bessie Cooper',snippet:'User opted out of paperless',time:'1d',ch:'messenger',img:'https://i.pravatar.cc/42?img=47',sub:''},
+    {id:5,name:'Darrell Steward',snippet:'User opted out of paperless',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=12',sub:''},
+    {id:6,name:'Darlene Robertson',snippet:'This is a med alert',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=5',sub:''},
+    {id:7,name:'Leslie Alexander',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'website',img:'https://i.pravatar.cc/42?img=9',sub:''},
+    {id:8,name:'Dianne Russell',snippet:'Server response time degradation detected.',time:'2h',ch:'website',img:'https://i.pravatar.cc/42?img=20',sub:''},
+    {id:9,name:'Cody Fisher',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=33',sub:''},
+    {id:50,name:'Guy Hawkins',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=50',sub:''},
+    {id:51,name:'Jerome Bell',snippet:'Can we hop on a quick call?',time:'3h',ch:'messenger',img:'https://i.pravatar.cc/42?img=22',sub:''},
+    {id:52,name:'Kathryn Murphy',snippet:'Is the pricing negotiable?',time:'3h',ch:'website',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:53,name:'Robert Fox',snippet:'Need help with onboarding.',time:'4h',ch:'email',img:'https://i.pravatar.cc/42?img=61',sub:''},
+    {id:54,name:'Eleanor Pena',snippet:'Hi! I need account support.',time:'4h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=25',sub:''},
+    {id:55,name:'Arlene McCoy',snippet:'Setup issue on mobile app.',time:'5h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:56,name:'Annette Black',snippet:'Billing question.',time:'5h',ch:'email',img:'https://i.pravatar.cc/42?img=44',sub:''},
+  ],
+  whatsapp:[
+    {id:10,name:'Jane Cooper',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=47',sub:''},
+    {id:11,name:'Ralph Edwards',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=11',sub:''},
+    {id:12,name:'Arlene McCoy',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:13,name:'Jacob Jones',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=67',sub:''},
+    {id:14,name:'Eleanor Pena',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=25',sub:''},
+    {id:15,name:'Brooklyn Simmons',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=30',sub:''},
+    {id:16,name:'Bessie Cooper',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=47',sub:''},
+    {id:17,name:'Courtney Henry',snippet:"Hi, I'm having trouble setting my account...",time:'2h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=32',sub:''},
+    {id:60,name:'Albert Flores',snippet:'Can you check my subscription?',time:'3h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=70',sub:''},
+    {id:61,name:'Theresa Webb',snippet:'App keeps crashing on login.',time:'3h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=48',sub:''},
+    {id:62,name:'Ronald Richards',snippet:'Payment not going through.',time:'4h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=60',sub:''},
+    {id:63,name:'Kristin Watson',snippet:'How do I reset my password?',time:'4h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=35',sub:''},
+    {id:64,name:'Robert Fox',snippet:'I need an invoice copy.',time:'5h',ch:'whatsapp',img:'https://i.pravatar.cc/42?img=61',sub:''},
+  ],
+  website:[
+    {id:20,name:'Leslie Alexander',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=9',sub:''},
+    {id:21,name:'Kathryn Murphy',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:22,name:'Cody Fisher',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=33',sub:''},
+    {id:23,name:'Esther Howard',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=57',sub:''},
+    {id:24,name:'Annette Black',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=44',sub:''},
+    {id:25,name:'Dianne Russell',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=20',sub:''},
+    {id:26,name:'Brooklyn Simmons',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=30',sub:''},
+    {id:27,name:'Ralph Edwards',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=11',sub:''},
+    {id:28,name:'Albert Flores',snippet:'Is the pricing negotiable?',time:'10m',ch:'website',img:'https://i.pravatar.cc/42?img=70',sub:''},
+    {id:70,name:'Jerome Bell',snippet:'Looking for enterprise plans.',time:'1h',ch:'website',img:'https://i.pravatar.cc/42?img=22',sub:''},
+    {id:71,name:'Courtney Henry',snippet:'Can I get a trial extension?',time:'1h',ch:'website',img:'https://i.pravatar.cc/42?img=32',sub:''},
+    {id:72,name:'Kristin Watson',snippet:'Your chatbot is really helpful!',time:'2h',ch:'website',img:'https://i.pravatar.cc/42?img=35',sub:''},
+    {id:73,name:'Ronald Richards',snippet:'Need white-label options.',time:'2h',ch:'website',img:'https://i.pravatar.cc/42?img=60',sub:''},
+  ],
+  email:[
+    {id:30,name:'Guy Hawkins',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=50',sub:''},
+    {id:31,name:'Dianne Russell',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=20',sub:''},
+    {id:32,name:'Ronald Richards',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=60',sub:''},
+    {id:33,name:'Kathryn Murphy',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:34,name:'Esther Howard',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=57',sub:''},
+    {id:35,name:'Kristin Watson',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=35',sub:''},
+    {id:36,name:'Robert Fox',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=61',sub:''},
+    {id:37,name:'Jacob Jones',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=67',sub:''},
+    {id:38,name:'Darlene Robertson',snippet:'Re: Integration request ticket...',time:'2h',ch:'email',img:'https://i.pravatar.cc/42?img=5',sub:''},
+    {id:80,name:'Wade Warren',snippet:'Annual renewal approaching.',time:'3h',ch:'email',img:'https://i.pravatar.cc/42?img=68',sub:''},
+    {id:81,name:'Brooklyn Simmons',snippet:'Refund request for last month.',time:'3h',ch:'email',img:'https://i.pravatar.cc/42?img=30',sub:''},
+    {id:82,name:'Theresa Webb',snippet:'Can you send the contract?',time:'4h',ch:'email',img:'https://i.pravatar.cc/42?img=48',sub:''},
+    {id:83,name:'Albert Flores',snippet:'API documentation request.',time:'4h',ch:'email',img:'https://i.pravatar.cc/42?img=70',sub:''},
+  ],
+  messenger:[
+    {id:40,name:'Darrell Steward',snippet:'Re: Integration request ticket...',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=12',sub:''},
+    {id:41,name:'Theresa Webb',snippet:'Re: Integration request ticket...',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=48',sub:''},
+    {id:42,name:'Darlene Robertson',snippet:'Re: Integration request ticket...',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=5',sub:''},
+    {id:43,name:'Dianne Russell',snippet:'Re: Integration request ticket...',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=20',sub:''},
+    {id:44,name:'Jerome Bell',snippet:'Re: Integration request ticket...',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=22',sub:''},
+    {id:45,name:'Esther Howard',snippet:'Is the pricing negotiable?',time:'10m',ch:'messenger',img:'https://i.pravatar.cc/42?img=57',sub:''},
+    {id:46,name:'Arlene McCoy',snippet:'Is the pricing negotiable?',time:'10m',ch:'messenger',img:'https://i.pravatar.cc/42?img=45',sub:''},
+    {id:47,name:'Jane Cooper',snippet:'Is the pricing negotiable?',time:'10m',ch:'messenger',img:'https://i.pravatar.cc/42?img=47',sub:''},
+    {id:48,name:'Cody Fisher',snippet:'Is the pricing negotiable?',time:'10m',ch:'messenger',img:'https://i.pravatar.cc/42?img=33',sub:''},
+    {id:49,name:'Ralph Edwards',snippet:'Is the pricing negotiable?',time:'10m',ch:'messenger',img:'https://i.pravatar.cc/42?img=11',sub:''},
+    {id:90,name:'Robert Fox',snippet:'Saw your post about AI features.',time:'1h',ch:'messenger',img:'https://i.pravatar.cc/42?img=61',sub:''},
+    {id:91,name:'Kristin Watson',snippet:'When is the new update out?',time:'1h',ch:'messenger',img:'https://i.pravatar.cc/42?img=35',sub:''},
+    {id:92,name:'Wade Warren',snippet:'Love the new dashboard design!',time:'2h',ch:'messenger',img:'https://i.pravatar.cc/42?img=68',sub:''},
+    {id:93,name:'Brooklyn Simmons',snippet:'Can I get a product demo?',time:'3h',ch:'messenger',img:'https://i.pravatar.cc/42?img=30',sub:''},
+  ]
+};
+
+// default messages for "John Doe"
+const defaultMsgs=[
+  {type:'day',label:'Yesterday'},{type:'sentby',label:'09:45 AM • Sent by You'},
+  {type:'me',text:'Hello John! Yes, absolutely.\nThe Enterprise plan includes full API access and webhooks.'},
+  {type:'them',text:"Hi there, I'm interested in the Enterprise plan.",time:'09:41 AM'},
+  {type:'them',text:'Does it include API access for custom integrations?',time:'09:42 AM'},
+  {type:'day',label:'TODAY'},{type:'sentby',label:'09:45 AM • Sent by You'},
+  {type:'me',text:'Hello John! Yes, absolutely.\nThe Enterprise plan includes full API access and webhooks.'},
+  {type:'me',text:'You also get a dedicated account manager for setup.'},
+  {type:'them',text:'That sounds perfect. Can we schedule a quick demo?',time:'09:48 AM'},
+  {type:'me',text:"Sounds great! Let's schedule it.\nHow does tomorrow at 2 PM look for you?"},
+];
+
+let currentFilter='all';
+let activeConvId=1;
+let rightPanelOpen=false;
+let pendingToggle=null;
+
+function getInitials(name){return name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();}
+function getColor(name){let h=0;for(let c of name)h=(h*31+c.charCodeAt(0))%avatarColors.length;return avatarColors[h];}
+
+function renderConvList(list){
+  const el=document.getElementById('conv-items');
+  el.innerHTML=list.map(c=>`
+    <div class="conv-item${c.id===activeConvId?' active':''}" onclick="selectConv(${c.id})" id="ci-${c.id}">
+      <div class="avatar">
+        ${c.img?`<img class="avatar-img" src="${c.img}" onerror="this.outerHTML='<div class=avatar-img style=background:${getColor(c.name)}>${getInitials(c.name)}</div>'">`:`<div class="avatar-img" style="background:${c.color||getColor(c.name)}">${c.initials||getInitials(c.name)}</div>`}
+        <div class="ch-badge" style="background:${chBgColors[c.ch]||'#6b7280'}">${chIcons[c.ch]||''}</div>
+      </div>
+      <div class="conv-info">
+        <div class="conv-name-row"><span class="conv-name">${c.name}</span><span class="conv-time">${c.time}</span></div>
+        <div class="conv-snippet">${c.snippet}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderMessages(msgs,conv){
+  const el=document.getElementById('messages');
+  el.innerHTML=msgs.map(m=>{
+    if(m.type==='day') return `<div class="day-sep"><span>${m.label}</span></div>`;
+    if(m.type==='sentby') return `<div class="sent-by">${m.label}</div>`;
+    if(m.type==='me') return `<div class="msg-bubble me">${m.text.replace(/\n/g,'<br>')}</div>`;
+    if(m.type==='them'){
+      const avatarH=conv.img?`<img src="${conv.img}" style="width:30px;height:30px;border-radius:50%;flex-shrink:0">`:`<div style="width:30px;height:30px;border-radius:50%;background:${conv.color||getColor(conv.name)};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${conv.initials||getInitials(conv.name)}</div>`;
+      return `<div style="display:flex;align-items:flex-end;gap:8px">${avatarH}<div><div class="msg-bubble them">${m.text}</div>${m.time?`<div style="font-size:10px;color:#9ca3af;margin-top:3px">${m.time}</div>`:''}</div></div>`;
+    }
+    return '';
+  }).join('');
+  el.scrollTop=el.scrollHeight;
+}
+
+function updateChatHeader(conv){
+  const el=document.getElementById('chat-avatar');
+  if(conv.img){
+    const v=document.getElementById('chat-header').querySelector('.avatar-img');
+    v.outerHTML=`<img class="avatar-img" id="chat-avatar" src="${conv.img}" style="width:38px;height:38px;border-radius:50%;object-fit:cover" onerror="this.style.display='none'">`;
+  } else {
+    el.textContent=conv.initials||getInitials(conv.name);
+    el.style.background=conv.color||getColor(conv.name);
+  }
+  const badge=document.getElementById('chat-ch-badge');
+  badge.style.background=chBgColors[conv.ch]||'#6b7280';
+  badge.innerHTML=chIcons[conv.ch]||'';
+  document.getElementById('chat-name').textContent=conv.name;
+  document.getElementById('chat-sub').textContent=conv.sub||'';
+}
+
+function genMessages(conv){
+  const n=conv.name.split(' ')[0];
+  return[
+    {type:'day',label:'2 Days Ago'},{type:'sentby',label:'10:00 AM • Sent by You'},
+    {type:'me',text:`Hi ${n}, thanks for reaching out! How can we help you today?`},
+    {type:'them',text:`Hi! I saw your platform online and I\'m curious about the pricing plans.`,time:'10:02 AM'},
+    {type:'them',text:'Do you offer a free trial?',time:'10:03 AM'},
+    {type:'me',text:'Yes, we offer a 14-day free trial with full access to all features — no credit card required!'},
+    {type:'them',text:'That sounds great. What happens after the trial ends?',time:'10:05 AM'},
+    {type:'me',text:'You can choose a plan that fits your needs. We have Starter, Pro, and Enterprise tiers.\nThe Enterprise plan includes full API access and webhooks.'},
+    {type:'day',label:'Yesterday'},{type:'sentby',label:'09:45 AM • Sent by You'},
+    {type:'me',text:`Hello ${n}! Yes, absolutely.\nThe Enterprise plan includes full API access and webhooks.`},
+    {type:'them',text:`Hi there, I\'m interested in the Enterprise plan.`,time:'09:41 AM'},
+    {type:'them',text:'Does it include API access for custom integrations?',time:'09:42 AM'},
+    {type:'me',text:'Absolutely! You get full REST API access, webhook support, and a dedicated sandbox environment for testing.'},
+    {type:'them',text:`Can we get SSO and role-based access control too?`,time:'09:44 AM'},
+    {type:'me',text:'Yes — SSO via SAML 2.0 and RBAC are both included in Enterprise. Your team can have custom permission levels.'},
+    {type:'day',label:'TODAY'},{type:'sentby',label:'09:45 AM • Sent by You'},
+    {type:'me',text:`Hello ${n}! Yes, absolutely.\nThe Enterprise plan includes full API access and webhooks.`},
+    {type:'me',text:'You also get a dedicated account manager for setup.'},
+    {type:'them',text:'That sounds perfect. Can we schedule a quick demo?',time:'09:48 AM'},
+    {type:'me',text:"Sounds great! Let's schedule it.\nHow does tomorrow at 2 PM look for you?"},
+  ];
+}
+
+// ── DYNAMIC CUSTOMER DATA ──
+const cities=['San Francisco, CA','New York, NY','Austin, TX','Seattle, WA','Chicago, IL','Los Angeles, CA','Boston, MA','Miami, FL'];
+const companies=['TechStart Inc.','Acme Corp','GlobalTech','Nexus Solutions','CloudBase','ByteWorks','DataFlow Ltd','SyncMedia'];
+const tags=[['PROSPECT','VIP'],['CUSTOMER'],['LEAD'],['PARTNER','PROSPECT'],['CUSTOMER','VIP'],['LEAD'],['PROSPECT'],['CUSTOMER']];
+const tagClasses=['prospect','vip','lead','partner','customer'];
+const tagColorMap={PROSPECT:'prospect',VIP:'vip',LEAD:'lead',PARTNER:'partner',CUSTOMER:'customer'};
+const activities=[
+  ['Chat started','Today via Website','Viewed pricing page','Yesterday','Email campaign sent','Oct 24'],
+  ['Chat started','Today via WhatsApp','Submitted support ticket','2 days ago','Account created','Sep 12'],
+  ['Chat started','Just now via Messenger','Visited homepage','Yesterday','Trial started','Nov 3'],
+  ['Live chat initiated','Today','Upgraded plan','Last week','Invoice downloaded','Oct 15'],
+];
+
+function hash(str){
+  let h=0;
+  for(let c of str)h=(h*31+c.charCodeAt(0))&0xfffffff;
+  return h;
+}
+
+function generateCustomerData(conv){
+  const h=hash(conv.name);
+  const firstName=conv.name.split(' ')[0].toLowerCase().replace(/[^a-z]/g,'');
+  const lastName=conv.name.split(' ').slice(-1)[0].toLowerCase().replace(/[^a-z]/g,'');
+  const company=companies[h%companies.length];
+  const city=cities[(h>>2)%cities.length];
+  const phoneNum=`+1 (555) ${String((h%900)+100)}-${String((h>>4)%9000+1000)}`;
+  const email=`${firstName}.${lastName}@${company.toLowerCase().replace(/[^a-z]/g,'').substring(0,8)}.io`;
+  const tagPair=tags[h%tags.length];
+  const acts=activities[h%activities.length];
+  return{company,city,phone:phoneNum,email,tags:tagPair,acts};
+}
+
+function updateRightPanel(conv){
+  const d=generateCustomerData(conv);
+  // avatar
+  const rpAv=document.getElementById('rp-avatar');
+  rpAv.textContent=conv.initials||getInitials(conv.name);
+  rpAv.style.background=conv.color||getColor(conv.name);
+  // name / company
+  document.getElementById('rp-name').textContent=conv.name;
+  document.getElementById('rp-company').textContent=d.company;
+  // tags
+  document.getElementById('rp-tags').innerHTML=d.tags.map(t=>`<span class="tag ${tagColorMap[t]||'prospect'}">${t}</span>`).join('');
+  // contact
+  document.getElementById('rp-contact').innerHTML=`
+    <div class="contact-row"><div class="val">${d.email}</div><div class="lbl">Email</div></div>
+    <div class="contact-row"><div class="val">${d.phone}</div><div class="lbl">Phone</div></div>
+    <div class="contact-row"><div class="val">${d.city}</div><div class="lbl">Location</div></div>`;
+  // activity
+  const dotClasses=['','gray','gray'];
+  const actItems=[];
+  for(let i=0;i<d.acts.length;i+=2){
+    actItems.push(`<div class="activity-item"><div class="act-dot ${dotClasses[i/2]||'gray'}"></div><div class="act-text"><div class="name">${d.acts[i]}</div><div class="when">${d.acts[i+1]}</div></div></div>`);
+  }
+  document.getElementById('rp-activity').innerHTML=actItems.join('');
+}
+
+function selectConv(id){
+  const allLists=Object.values(conversations).flat();
+  const conv=allLists.find(c=>c.id===id);
+  if(!conv)return;
+  activeConvId=id;
+  document.querySelectorAll('.conv-item').forEach(el=>el.classList.remove('active'));
+  const item=document.getElementById('ci-'+id);
+  if(item) item.classList.add('active');
+  updateChatHeader(conv);
+  renderMessages(genMessages(conv),conv);
+  updateRightPanel(conv);
+  // update reply placeholder
+  const placeholders={whatsapp:'WhatsApp',email:'Email',messenger:'Messenger',website:'Website'};
+  document.getElementById('reply-textarea').placeholder=`Type your reply via ${placeholders[conv.ch]||''}...`;
+  // highlight matching reply tab
+  const map={whatsapp:'wa',email:'em',messenger:'ms',website:'wb'};
+  selectReplyTab(map[conv.ch]||'wa');
+}
+
+function selectFilter(ch){
+  currentFilter=ch;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.toggle('active',t.dataset.ch===ch));
+  const list=conversations[ch]||conversations.all;
+  // auto-select first in new list
+  if(list.length){
+    activeConvId=list[0].id;
+    renderConvList(list);
+    selectConv(list[0].id);
+  }
+}
+
+function filterConvs(q){
+  const list=(conversations[currentFilter]||conversations.all).filter(c=>c.name.toLowerCase().includes(q.toLowerCase())||c.snippet.toLowerCase().includes(q.toLowerCase()));
+  renderConvList(list);
+}
+
+function toggleRightPanel(){
+  rightPanelOpen=!rightPanelOpen;
+  document.getElementById('right-panel').classList.toggle('open',rightPanelOpen);
+}
+
+// map from reply-tab key → channel key + label
+const replyTabMap={
+  wa:{ch:'whatsapp',label:'WhatsApp'},
+  em:{ch:'email',label:'Email'},
+  ms:{ch:'messenger',label:'Messenger'},
+  wb:{ch:'website',label:'Website'}
+};
+function selectReplyTab(key){
+  ['wa','em','ms','wb'].forEach(k=>document.getElementById('rt-'+k).classList.toggle('active',k===key));
+  // update channel badge in header to reflect chosen reply platform
+  const info=replyTabMap[key];
+  if(!info) return;
+  const badge=document.getElementById('chat-ch-badge');
+  badge.style.background=chBgColors[info.ch]||'#6b7280';
+  badge.innerHTML=chIcons[info.ch]||'';
+  document.getElementById('reply-textarea').placeholder=`Type your reply via ${info.label}...`;
+}
+
+function sendMsg(){
+  const ta=document.getElementById('reply-textarea');
+  const txt=ta.value.trim();
+  if(!txt)return;
+  const msgs=document.getElementById('messages');
+  const bubble=document.createElement('div');
+  bubble.className='msg-bubble me';
+  bubble.textContent=txt;
+  msgs.appendChild(bubble);
+  ta.value='';
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ── PAGE SWITCHING ──
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-omni').classList.toggle('active',page==='omni');
+  document.getElementById('nav-int').classList.toggle('active',page==='integrations');
+  // update nav icon colors
+  document.getElementById('nav-omni').querySelector('svg').setAttribute('stroke',page==='omni'?'#2563EB':'#6b7280');
+  document.getElementById('nav-omni').querySelector('span').style.color=page==='omni'?'#2563EB':'#6b7280';
+  document.getElementById('nav-int').querySelector('svg').setAttribute('stroke',page==='integrations'?'#2563EB':'#6b7280');
+  document.getElementById('nav-int').querySelector('span').style.color=page==='integrations'?'#2563EB':'#6b7280';
+}
+
+// ── TOGGLE CONFIRM MODAL ──
+function confirmToggle(checkbox, channelName){
+  // revert optimistic toggle — wait for confirm
+  checkbox.checked=!checkbox.checked;
+  pendingToggle={checkbox,channelName};
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(confirmed){
+  document.getElementById('modal-overlay').classList.remove('open');
+  if(confirmed && pendingToggle){
+    const{checkbox}=pendingToggle;
+    checkbox.checked=!checkbox.checked;
+    // update status label
+    const card=checkbox.closest('.int-card');
+    const statusEl=card.querySelector('.int-status');
+    const isNowConnected=checkbox.checked;
+    statusEl.textContent=isNowConnected?'CONNECTED':'DISCONNECTED';
+    statusEl.className='int-status '+(isNowConnected?'connected':'disconnected');
+  }
+  pendingToggle=null;
+}
+
+// ── MOUSEWHEEL HORIZONTAL SCROLL ON FILTER TABS ──
+document.getElementById('filter-tabs').addEventListener('wheel',function(e){
+  e.preventDefault();
+  this.scrollLeft+=e.deltaY*1.2;
+},{passive:false});
+
+// ── IMAGE PICKER ──
+const phoneProducts=[
+  {name:'iPhone 16 Pro',img:'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=220&h=165&fit=crop'},
+  {name:'Samsung S25',img:'https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=220&h=165&fit=crop'},
+  {name:'Pixel 9 Pro',img:'https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=220&h=165&fit=crop'},
+  {name:'iPhone 16',img:'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?w=220&h=165&fit=crop'},
+  {name:'Galaxy Z Fold 6',img:'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=220&h=165&fit=crop'},
+  {name:'OnePlus 13',img:'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=220&h=165&fit=crop'},
+  {name:'Xiaomi 15 Pro',img:'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=220&h=165&fit=crop'},
+  {name:'S24 Ultra',img:'https://images.unsplash.com/photo-1606041008023-472dfb5e530f?w=220&h=165&fit=crop'},
+];
+
+(function initImgPicker(){
+  const grid=document.getElementById('img-picker-grid');
+  grid.innerHTML=phoneProducts.map((p,i)=>`
+    <div class="img-picker-item" data-index="${i}">
+      <img src="${p.img}" alt="${p.name}" loading="lazy"/>
+      <div class="pname">${p.name}</div>
+    </div>`).join('');
+  // Use event delegation on grid to ensure clicks on child elements (img, pname) work
+  grid.addEventListener('click',function(e){
+    e.stopPropagation();
+    const item=e.target.closest('.img-picker-item');
+    if(item){
+      const idx=parseInt(item.dataset.index,10);
+      if(!isNaN(idx)) sendProductImage(idx);
+    }
+  });
+})();
+
+function toggleImgPicker(e){
+  e.stopPropagation();
+  const popup=document.getElementById('img-picker-popup');
+  const isOpen=popup.classList.contains('open');
+  if(!isOpen){
+    const btn=document.getElementById('img-picker-btn');
+    const r=btn.getBoundingClientRect();
+    // First make popup visible but hidden to measure its real height
+    popup.style.visibility='hidden';
+    popup.style.top='0px';
+    popup.style.left='0px';
+    popup.classList.add('open');
+    const h=popup.offsetHeight;
+    const w=popup.offsetWidth;
+    // Now position it above the button
+    popup.style.left=Math.max(8,r.left-10)+'px';
+    popup.style.top=(r.top-h-12)+'px';
+    popup.style.visibility='';
+  } else {
+    popup.classList.remove('open');
+  }
+}
+
+function sendProductImage(index){
+  const p=phoneProducts[index];
+  const msgs=document.getElementById('messages');
+  // Close the picker popup
+  document.getElementById('img-picker-popup').classList.remove('open');
+  // Create image message bubble
+  const bubble=document.createElement('div');
+  bubble.className='msg-img-bubble';
+  const img=new Image();
+  img.src=p.img;
+  img.alt=p.name;
+  img.style.width='220px';
+  img.style.height='165px';
+  img.style.objectFit='cover';
+  img.style.display='block';
+  const caption=document.createElement('div');
+  caption.className='img-caption';
+  caption.textContent='📱 '+p.name;
+  bubble.appendChild(img);
+  bubble.appendChild(caption);
+  msgs.appendChild(bubble);
+  // Scroll to bottom to show the new image
+  setTimeout(()=>msgs.scrollTo({top:msgs.scrollHeight,behavior:'smooth'}),100);
+}
+
+// close picker when clicking outside
+document.addEventListener('click',function(e){
+  const popup=document.getElementById('img-picker-popup');
+  const btn=document.getElementById('img-picker-btn');
+  if(popup && !popup.contains(e.target) && e.target!==btn && !btn.contains(e.target)){
+    popup.classList.remove('open');
+  }
+});
+
+// ── INIT ──
+(function init(){
+  renderConvList(conversations.all);
+  selectConv(1);
+})();
+</script>
+</body>
+</html>
