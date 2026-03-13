@@ -53,7 +53,14 @@ Nhờ đó doanh nghiệp có thể:
 
 ## Màn Hình Chính
 
-![Home]()
+![Home](849126d9-55bc-4447-949b-b167d1f71433.png)
+
+![Home](01d6d80b-05a0-4c20-b53e-54b116d69881.png)
+
+![Home](0806acea-a662-47fd-b9f7-75f229ce8271.png)
+
+![Home](e6f3e804-26d2-4b35-8ea4-bbdf664fde82.png)
+
 
 ## Hướng Dẫn Sử Dụng
 
